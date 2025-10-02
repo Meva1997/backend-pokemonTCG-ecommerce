@@ -2,11 +2,23 @@ import { Request, Response } from "express";
 import Order from "../models/Order";
 import OrderProduct from "../models/OrderProduct";
 import Users from "../models/Users";
+import Product from "../models/Product";
 
 export class OrderController {
   static async createOrder(req: Request, res: Response) {
     try {
       const { userId, products, shippingAddress } = req.body; // products is an array of { productId, quantity, price }
+
+      for (const item of products) {
+        const product = await Product.findByPk(item.id);
+        if (!product || product.stock < item.quantity || product.stock <= 0) {
+          const errorMessage = new Error(
+            `Product with id ${item.id} is out of stock or you requested more than available`
+          );
+          return res.status(400).json({ message: errorMessage.message });
+        }
+      }
+
       let total = 0; // Calculate total price
       products.forEach((product: { price: number; quantity: number }) => {
         total += product.price * product.quantity; // total price = sum of (price * quantity) for each product
@@ -23,13 +35,21 @@ export class OrderController {
       await order.save();
 
       // Associate products with the order
-      for (const product of products) {
+      for (const item of products) {
         await OrderProduct.create({
           orderId: order.id,
-          productId: product.id,
-          quantity: product.quantity,
-          price: product.price,
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
         });
+
+        const product = await Product.findByPk(item.id);
+
+        // Decrease stock
+        if (product) {
+          product.stock = product.stock - item.quantity;
+          await product.save();
+        }
       }
 
       res.status(201).json(order);
