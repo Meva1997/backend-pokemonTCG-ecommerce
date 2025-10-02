@@ -6,6 +6,7 @@ import { seedCategories } from "./data/categories";
 import usersRouter from "./routes/usersRouter";
 import productsRouter from "./routes/productsRouter";
 import categoriesRouter from "./routes/categoryRouter";
+import orderRouter from "./routes/orderRouter";
 
 async function connectDB() {
   try {
@@ -32,5 +33,6 @@ app.use(express.json());
 app.use("/api/users", usersRouter); // Users routes
 app.use("/api/products", productsRouter); // Products routes
 app.use("/api/categories", categoriesRouter); // Categories routes
+app.use("/api/orders", orderRouter); // Orders routes
 
 export default app;
