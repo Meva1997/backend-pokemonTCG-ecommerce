@@ -1,8 +1,10 @@
 import {
+  AllowNull,
   BelongsTo,
   BelongsToMany,
   Column,
   DataType,
+  Default,
   ForeignKey,
   Model,
   Table,
@@ -16,38 +18,36 @@ import OrderProduct from "./OrderProduct";
 })
 class Order extends Model {
   @ForeignKey(() => Users)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   declare userId: number;
 
   @BelongsTo(() => Users)
   declare user: Users;
 
+  @Default("pending")
+  @AllowNull(false)
   @Column({
     type: DataType.ENUM("pending", "paid", "shipped", "cancelled"),
-    defaultValue: "pending",
-    allowNull: false,
   })
   declare status: "pending" | "paid" | "shipped" | "cancelled";
 
+  @AllowNull(false)
   @Column({
     type: DataType.STRING,
-    allowNull: false,
   })
   declare shippingAddress: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.FLOAT,
-    allowNull: false,
   })
   declare total: number;
 
   @BelongsToMany(() => Product, () => OrderProduct)
   declare products: Product[];
-
-  //BelongsToMany is used to define a many-to-many relationship between two models. In this case, it indicates that an Order can have many Products, and a Product can belong to many Orders. The second argument, () => OrderProduct, specifies the through table (or junction table) that holds the associations between Orders and Products.
 }
 
 export default Order;

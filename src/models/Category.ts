@@ -1,32 +1,40 @@
-import { Column, DataType, HasMany, Model, Table } from "sequelize-typescript";
+import {
+  AllowNull,
+  Column,
+  DataType,
+  HasMany,
+  Model,
+  Table,
+  Unique,
+} from "sequelize-typescript";
 import Product from "./Product";
 
 @Table({
   tableName: "categories",
 })
 class Category extends Model {
+  @AllowNull(false)
+  @Unique(true)
   @Column({
     type: DataType.STRING,
-    allowNull: false,
-    unique: true,
   })
   declare name: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
   })
   declare description: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.STRING,
-    allowNull: false,
   })
   declare icon: string;
 
+  @AllowNull(true)
   @Column({
     type: DataType.INTEGER,
-    allowNull: true,
   })
   declare parentId: number | null;
 

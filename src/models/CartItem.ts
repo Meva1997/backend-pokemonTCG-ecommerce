@@ -1,7 +1,9 @@
 import {
+  AllowNull,
   BelongsTo,
   Column,
   DataType,
+  Default,
   ForeignKey,
   Model,
   Table,
@@ -15,23 +17,23 @@ import Product from "./Product";
 })
 class CartItem extends Model {
   @ForeignKey(() => Users)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   userId: number;
 
   @ForeignKey(() => Product)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   productId: number;
 
+  @AllowNull(false)
+  @Default(1)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
   })
   quantity: number;
 

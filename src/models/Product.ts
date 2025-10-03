@@ -1,7 +1,9 @@
 import {
+  AllowNull,
   BelongsTo,
   Column,
   DataType,
+  Default,
   ForeignKey,
   Model,
   Table,
@@ -12,40 +14,40 @@ import Category from "./Category";
   tableName: "products",
 })
 class Product extends Model {
+  @AllowNull(false)
   @Column({
     type: DataType.STRING,
-    allowNull: false,
   })
   declare name: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
   })
   declare description: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.FLOAT,
-    allowNull: false,
   })
   declare price: number;
 
+  @AllowNull(true)
   @Column({
     type: DataType.STRING,
-    allowNull: true,
   })
   declare image: string;
 
+  @Default(0)
   @Column({
     type: DataType.INTEGER,
-    defaultValue: 0,
   })
   declare stock: number;
 
   @ForeignKey(() => Category)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   declare categoryId: number;
 

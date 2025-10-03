@@ -1,6 +1,8 @@
 import {
+  AllowNull,
   Column,
   DataType,
+  Default,
   ForeignKey,
   Model,
   Table,
@@ -14,29 +16,29 @@ import Product from "./Product";
 })
 class OrderProduct extends Model {
   @ForeignKey(() => Order)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   declare orderId: number;
 
   @ForeignKey(() => Product)
+  @AllowNull(false)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
   })
   declare productId: number;
 
+  @AllowNull(false)
+  @Default(1)
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
   })
   declare quantity: number;
 
+  @AllowNull(false)
   @Column({
     type: DataType.FLOAT,
-    allowNull: false,
   })
   declare price: number;
 }

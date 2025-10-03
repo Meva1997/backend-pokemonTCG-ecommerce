@@ -1,32 +1,41 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import {
+  AllowNull,
+  Column,
+  DataType,
+  Default,
+  HasMany,
+  Model,
+  Table,
+  Unique,
+} from "sequelize-typescript";
+import Order from "./Order";
 
 @Table({
   tableName: "users",
 })
 class Users extends Model {
+  @AllowNull(false)
   @Column({
     type: DataType.STRING(50),
-    allowNull: false,
-    unique: true,
   })
   declare userName: string;
 
+  @Unique(true)
+  @AllowNull(false)
   @Column({
     type: DataType.STRING(50),
-    allowNull: false,
-    unique: true,
   })
   declare email: string;
 
+  @AllowNull(false)
   @Column({
     type: DataType.STRING(20),
-    allowNull: false,
   })
   declare password: string;
 
+  @Default(false)
   @Column({
     type: DataType.BOOLEAN,
-    defaultValue: false,
   })
   declare isAdmin: boolean;
 
@@ -35,10 +44,14 @@ class Users extends Model {
   })
   declare token: string;
 
+  @Default(false)
   @Column({
     type: DataType.BOOLEAN,
   })
   declare confirmed: boolean;
+
+  @HasMany(() => Order)
+  declare orders: Order[];
 }
 
 export default Users;
