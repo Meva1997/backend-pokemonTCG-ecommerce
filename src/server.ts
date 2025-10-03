@@ -7,6 +7,7 @@ import usersRouter from "./routes/usersRouter";
 import productsRouter from "./routes/productsRouter";
 import categoriesRouter from "./routes/categoryRouter";
 import orderRouter from "./routes/orderRouter";
+import authRouter from "./routes/authRouter";
 
 async function connectDB() {
   try {
@@ -34,5 +35,6 @@ app.use("/api/users", usersRouter); // Users routes
 app.use("/api/products", productsRouter); // Products routes
 app.use("/api/categories", categoriesRouter); // Categories routes
 app.use("/api/orders", orderRouter); // Orders routes
+app.use("/api/auth", authRouter); // Auth routes
 
 export default app;

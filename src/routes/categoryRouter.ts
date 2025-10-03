@@ -7,6 +7,7 @@ import {
   validateCategoryExists,
   validateCategoryId,
 } from "../middleware/category";
+import { authenticate, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 
@@ -15,7 +16,13 @@ router.param("categoryId", validateCategoryExists); // In every route with :cate
 
 router.get("/", handleInputErrors, CategoryController.getAllCategories);
 
-router.post("/", validateCategoryBody, CategoryController.createCategory);
+router.post(
+  "/",
+  validateCategoryBody,
+  authenticate,
+  requireAdmin,
+  CategoryController.createCategory
+);
 
 router.get(
   "/:categoryId",
@@ -25,12 +32,16 @@ router.get(
 
 router.put(
   "/:categoryId",
+  authenticate,
+  requireAdmin,
   validateCategoryBody,
   CategoryController.updateCategoryById
 );
 
 router.delete(
   "/:categoryId",
+  authenticate,
+  requireAdmin,
   handleInputErrors,
   CategoryController.deleteCategoryById
 );

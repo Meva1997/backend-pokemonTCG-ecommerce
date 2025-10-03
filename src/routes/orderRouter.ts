@@ -3,23 +3,32 @@ import { handleInputErrors } from "../middleware/validation";
 import { OrderController } from "../controllers/OrderController";
 import { body, param } from "express-validator";
 import {
+  hasAccessToOrder,
   validateOrderExists,
   validateOrderId,
   validateUpdatedOrderExists,
 } from "../middleware/order";
+import { authenticate, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 
 router.param("orderId", validateOrderId);
 
-router.get("/", handleInputErrors, OrderController.getAllOrders);
+router.get("/", handleInputErrors, authenticate, OrderController.getAllOrders);
 
 router.post("/", handleInputErrors, OrderController.createOrder);
 
-router.get("/:orderId", OrderController.getOrderById);
+router.get(
+  "/:orderId",
+  authenticate,
+  hasAccessToOrder,
+  OrderController.getOrderById
+);
 
 router.put(
   "/:orderId",
+  authenticate,
+  requireAdmin,
   validateUpdatedOrderExists,
   body("status")
     .notEmpty()
@@ -30,6 +39,12 @@ router.put(
   OrderController.updateOrderStatus
 );
 
-router.delete("/:orderId", validateOrderExists, OrderController.deleteOrder);
+router.delete(
+  "/:orderId",
+  authenticate,
+  requireAdmin,
+  validateOrderExists,
+  OrderController.deleteOrder
+);
 
 export default router;

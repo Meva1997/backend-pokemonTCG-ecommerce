@@ -7,6 +7,7 @@ import {
   validateProductExists,
   validateProductId,
 } from "../middleware/product";
+import { authenticate, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 
@@ -15,16 +16,29 @@ router.param("productId", validateProductExists);
 
 router.get("/", ProductsController.getAllProducts);
 
-router.post("/", validateProductBody, ProductsController.createProduct);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  validateProductBody,
+  ProductsController.createProduct
+);
 
 router.get("/:productId", ProductsController.getProductById);
 
 router.put(
   "/:productId",
+  authenticate,
+  requireAdmin,
   validateProductBody,
   ProductsController.updateProduct
 );
 
-router.delete("/:productId", ProductsController.deleteProductById);
+router.delete(
+  "/:productId",
+  authenticate,
+  requireAdmin,
+  ProductsController.deleteProductById
+);
 
 export default router;

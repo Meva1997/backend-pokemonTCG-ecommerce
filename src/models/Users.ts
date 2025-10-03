@@ -29,7 +29,7 @@ class Users extends Model {
 
   @AllowNull(false)
   @Column({
-    type: DataType.STRING(20),
+    type: DataType.STRING(255), // Cambiado de 20 a 255 para passwords hasheados
   })
   declare password: string;
 
@@ -44,13 +44,16 @@ class Users extends Model {
   })
   declare token: string;
 
-  @Default(false)
+  @Default(true) //! Remove this line if you want to implement email confirmation
   @Column({
     type: DataType.BOOLEAN,
   })
   declare confirmed: boolean;
 
-  @HasMany(() => Order)
+  @HasMany(() => Order, {
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  })
   declare orders: Order[];
 }
 

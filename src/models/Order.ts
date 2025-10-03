@@ -17,6 +17,7 @@ import OrderProduct from "./OrderProduct";
   tableName: "orders",
 })
 class Order extends Model {
+  //! Foreign key to Users table it is used to associate each order with a specific user.
   @ForeignKey(() => Users)
   @AllowNull(false)
   @Column({
@@ -48,6 +49,8 @@ class Order extends Model {
 
   @BelongsToMany(() => Product, () => OrderProduct)
   declare products: Product[];
+
+  //?BelongsToMany is used to define a many-to-many relationship between two models. In this case, it indicates that an Order can have many Products, and a Product can belong to many Orders. The second argument, () => OrderProduct, specifies the through table (or junction table) that holds the associations between Orders and Products.
 }
 
 export default Order;

@@ -75,3 +75,21 @@ export async function validateOrderExists(
     res.status(500).json({ error: "Error deleting order" });
   }
 }
+
+export async function hasAccessToOrder(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const user = req.user;
+    const order = req.order;
+    if (!user.isAdmin && order.userId !== user.id) {
+      const errorMessage = new Error("Access denied");
+      return res.status(403).json({ error: errorMessage.message });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ error: "Error checking order access" });
+  }
+}
