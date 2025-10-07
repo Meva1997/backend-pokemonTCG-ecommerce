@@ -11,9 +11,7 @@ export class AuthController {
       // Verificar si el email ya existe
       const existingUser = await Users.findOne({ where: { email } });
       if (existingUser) {
-        const errorMessage = new Error(
-          "Email: " + email + " is already in use"
-        );
+        const errorMessage = new Error(`Email: ${email} is already in use`);
         return res.status(409).json({ error: errorMessage.message });
       }
 
@@ -21,7 +19,7 @@ export class AuthController {
       // Hashear la contraseña antes de guardar
       user.password = await hashPassword(user.password);
       await user.save();
-      res.status(201).json({ message: "Account created successfully" });
+      res.json("Account created successfully");
     } catch (error) {
       res.status(500).json({ error: "Error creating account" });
     }
@@ -40,9 +38,25 @@ export class AuthController {
         const errorMessage = new Error("Invalid password");
         return res.status(401).json({ error: errorMessage.message });
       }
+
       const token = generateJwt(user.id);
-      res.status(200).json({ message: "Login successful", token });
+
+      // Retornar información del usuario sin la contraseña
+      const userInfo = {
+        id: user.id,
+        userName: user.userName,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        confirmed: user.confirmed,
+      };
+
+      res.status(200).json({
+        message: "Login successful",
+        token,
+        user: userInfo,
+      });
     } catch (error) {
+      console.error("Error logging in:", error);
       res.status(500).json({ error: "Error logging in" });
     }
   };

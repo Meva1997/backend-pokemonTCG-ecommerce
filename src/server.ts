@@ -1,6 +1,7 @@
 import express from "express";
 import colors from "colors";
 import morgan from "morgan";
+import cors from "cors";
 import { db } from "./config/db";
 import { seedCategories } from "./data/categories";
 import usersRouter from "./routes/usersRouter";
@@ -26,6 +27,19 @@ async function connectDB() {
 connectDB();
 
 const app = express();
+
+// CORS configuration
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000", // Frontend en desarrollo
+      "http://127.0.0.1:3000", // Alternativa localhost
+    ],
+    credentials: true, // Permite cookies y headers de autenticación
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(morgan("dev"));
 
