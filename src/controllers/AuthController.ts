@@ -42,21 +42,21 @@ export class AuthController {
       const token = generateJwt(user.id);
 
       // Retornar información del usuario sin la contraseña
-      const userInfo = {
-        id: user.id,
-        userName: user.userName,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        confirmed: user.confirmed,
-      };
+      // const userInfo = {
+      //   id: user.id,
+      //   userName: user.userName,
+      //   email: user.email,
+      //   isAdmin: user.isAdmin,
+      //   confirmed: user.confirmed,
+      // };
 
-      res.status(200).json({
-        message: "Login successful",
-        token,
-        user: userInfo,
-      });
+      // res.status(200).json({
+      //   message: "Login successful",
+      //   token,
+      //   user: userInfo,
+      // });
+      res.status(200).json(token);
     } catch (error) {
-      console.error("Error logging in:", error);
       res.status(500).json({ error: "Error logging in" });
     }
   };
