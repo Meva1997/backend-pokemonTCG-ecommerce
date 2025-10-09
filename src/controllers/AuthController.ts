@@ -123,9 +123,32 @@ export class AuthController {
         const errorMessage = new Error("Current password is incorrect");
         return res.status(401).json({ error: errorMessage.message });
       }
-      res.status(200).json({ message: "Current password is correct" });
+      res.status(200).json("Current password is correct");
     } catch (error) {
       res.status(500).json({ error: "Error checking password" });
+    }
+  };
+
+  static updateAccount = async (req: Request, res: Response) => {
+    try {
+      const { userName, email } = req.body;
+      const user = await Users.findByPk(req.user.id);
+      if (!user) {
+        const errorMessage = new Error("User not found");
+        return res.status(404).json({ error: errorMessage.message });
+      }
+
+      if (user.email === email && user.userName === userName) {
+        const message = "No changes detected";
+        return res.status(200).json(message);
+      }
+
+      user.userName = userName;
+      user.email = email;
+      await user.save();
+      res.status(200).json("Account updated successfully");
+    } catch (error) {
+      res.status(500).json({ error: "Error updating account" });
     }
   };
 }

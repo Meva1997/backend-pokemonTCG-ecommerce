@@ -81,4 +81,15 @@ router.post(
   AuthController.checkPassword
 );
 
+router.post(
+  "/update-account",
+  authenticate,
+  body("userName")
+    .isLength({ min: 3 })
+    .withMessage("Username must be at least 3 characters"),
+  body("email").optional().isEmail().withMessage("Invalid email address"),
+  handleInputErrors,
+  AuthController.updateAccount
+);
+
 export default router;

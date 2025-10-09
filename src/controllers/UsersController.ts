@@ -7,7 +7,9 @@ export class UsersController {
   static getAllUsers = async (req: Request, res: Response) => {
     try {
       const users = await Users.findAll({
-        attributes: { exclude: ["password"] },
+        attributes: {
+          exclude: ["password", "createdAt", "updatedAt", "token"],
+        },
         order: [["createdAt", "DESC"]],
         //? TODO: Include associated models if needed
       });
