@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import Users from "../models/Users";
+import { hashPassword } from "../utils/auth";
 
 export class UsersController {
   // GET /api/users
@@ -21,7 +22,15 @@ export class UsersController {
 
   static createUser = async (req: Request, res: Response) => {
     try {
+      const { email } = req.body;
+      const existingUser = await Users.findOne({ where: { email } });
+      if (existingUser) {
+        const errorMessage = new Error(`Email: ${email} is already in use`);
+        return res.status(409).json({ error: errorMessage.message });
+      }
+
       const users = new Users(req.body);
+      users.password = await hashPassword(users.password);
       await users.save();
       res.status(201).json("User created successfully");
     } catch (error) {
