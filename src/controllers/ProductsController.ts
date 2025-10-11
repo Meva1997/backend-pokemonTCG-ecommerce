@@ -20,7 +20,12 @@ export class ProductsController {
       await product.save();
       res.status(201).json("Product created successfully");
     } catch (error) {
-      res.status(500).json({ error: "Error creating product" });
+      res
+        .status(500)
+        .json({
+          error: "Error creating product",
+          details: (error as Error).message,
+        });
     }
   };
 

@@ -19,7 +19,9 @@ export const validateProductBody = async (
     .isString()
     .notEmpty()
     .withMessage("Product name is required")
+    .withMessage("Product name must be less than 255 characters")
     .run(req);
+
   await body("price")
     .notEmpty()
     .withMessage("Price is required")
@@ -30,16 +32,29 @@ export const validateProductBody = async (
       return true;
     })
     .run(req);
+
+  await body("description")
+    .isString()
+    .notEmpty()
+    .withMessage("Product description is required")
+    .withMessage("Product description must be less than 500 characters")
+    .run(req);
+
   await body("image")
     .notEmpty()
     .withMessage("Product image is required")
+    .withMessage("Image URL must be less than 1000 characters")
+    .isURL()
+    .withMessage("Image must be a valid URL")
     .run(req);
+
   await body("stock")
     .notEmpty()
     .withMessage("Stock is required")
-    .custom((value) => value > 0)
-    .withMessage("Stock must be greater than 0")
+    .isInt({ min: 0 })
+    .withMessage("Stock must be a number greater than or equal to 0")
     .run(req);
+
   await body("categoryId")
     .notEmpty()
     .withMessage("Category ID is required")
