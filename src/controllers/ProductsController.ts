@@ -1,6 +1,8 @@
 import { ErrorMessage } from "./../../node_modules/express-validator/lib/base.d";
 import Product from "../models/Product";
 import { Request, Response } from "express";
+import { comparePassword } from "../utils/auth";
+import Users from "../models/Users";
 
 export class ProductsController {
   static getAllProducts = async (req: Request, res: Response) => {
@@ -36,7 +38,42 @@ export class ProductsController {
   };
 
   static deleteProductById = async (req: Request, res: Response) => {
-    await req.product.destroy();
-    res.status(200).json("Product deleted successfully");
+    try {
+      const { password } = req.body;
+
+      if (!password) {
+        const errorMessage = new Error(
+          "Password is required to delete a product"
+        );
+        return res.status(400).json({ error: errorMessage.message });
+      }
+
+      const userPassword = await Users.findByPk(req.user.id, {
+        attributes: ["password"],
+      });
+
+      if (!userPassword) {
+        return res.status(500).json({ error: "User password not found" });
+      }
+
+      const isPasswordValid = await comparePassword(
+        password,
+        userPassword.password
+      );
+
+      if (!isPasswordValid) {
+        const errorMessage = new Error("Incorrect password");
+        return res.status(401).json({ error: errorMessage.message });
+      }
+
+      await req.product.destroy();
+      res.status(200).json("Product deleted successfully");
+    } catch (error) {
+      console.error("❌ Error deleting product:", error);
+      res.status(500).json({
+        error: "Error deleting product",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 }
