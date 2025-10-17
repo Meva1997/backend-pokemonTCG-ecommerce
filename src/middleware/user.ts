@@ -1,12 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { body, param, validationResult } from "express-validator";
 import Users from "../models/Users";
+import { comparePassword, hashPassword } from "../utils/auth";
 
 // Extend Request interface to include user property
 declare global {
   namespace Express {
     interface Request {
       user?: Users;
+      updateResult?: {
+        message: string;
+        updated: boolean;
+      };
     }
   }
 }
@@ -104,6 +109,74 @@ export const validateUserUpdateBody = async (
   }
 
   next();
+};
+
+export const validateUserUpdateFields = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userName, email, currentPassword, newPassword, isAdmin } = req.body;
+
+    //? Validate that at least one field is provided for update
+    if (newPassword && newPassword !== "") {
+      const isValidPassword = await comparePassword(
+        currentPassword,
+        req.user.password
+      );
+
+      //? If currentPassword is provided, it must be valid
+      if (!isValidPassword) {
+        const errorMessage = new Error("Invalid password");
+        return res.status(401).json({ error: errorMessage.message });
+      }
+
+      const newHashedPassword = await hashPassword(newPassword);
+
+      req.user.password = newHashedPassword;
+      await req.user.update({ password: newHashedPassword }); // Save only the password change
+
+      req.updateResult = {
+        message: "Password updated successfully",
+        updated: true,
+      };
+      return next();
+    }
+
+    //? If no password change, check other fields
+    if (typeof isAdmin === "boolean" && isAdmin !== req.user.isAdmin) {
+      req.user.isAdmin = isAdmin;
+      await req.user.update({ isAdmin }); // Save only the isAdmin change
+      req.updateResult = {
+        message: "User role updated successfully",
+        updated: true,
+      };
+      return next();
+    }
+
+    //? If no changes detected, return an error
+    if (
+      email === req.user.email &&
+      userName === req.user.userName &&
+      isAdmin === req.user.isAdmin &&
+      (!newPassword || newPassword === "")
+    ) {
+      const errorMessage = new Error("No changes detected");
+      return res.status(400).json({ error: errorMessage.message });
+    }
+
+    req.user.userName = userName;
+    req.user.email = email;
+    await req.user.update({ userName, email });
+
+    req.updateResult = { message: "User updated successfully", updated: true };
+
+    next();
+  } catch (error) {
+    console.error("Error in processUserUpdate middleware:", error);
+    res.status(500).json({ error: "Error updating user" });
+  }
 };
 
 export const validateUserExists = async (

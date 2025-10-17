@@ -3,7 +3,7 @@ import { AuthController } from "../controllers/AuthController";
 import { body } from "express-validator";
 import { handleInputErrors } from "../middleware/validation";
 import { limiter } from "../config/limiter";
-import { authenticate } from "../middleware/auth";
+import { authenticate, processAccountUpdate } from "../middleware/auth";
 
 const router = Router();
 
@@ -88,10 +88,9 @@ router.post(
     .isLength({ min: 3 })
     .withMessage("Username must be at least 3 characters"),
   body("email").optional().isEmail().withMessage("Invalid email address"),
+  processAccountUpdate,
   handleInputErrors,
   AuthController.updateAccount
 );
-
-//passsssssss
 
 export default router;

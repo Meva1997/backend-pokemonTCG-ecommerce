@@ -5,6 +5,7 @@ import {
   validateUserExists,
   validateUserId,
   validateUserUpdateBody,
+  validateUserUpdateFields,
 } from "../middleware/user";
 import { authenticate, requireAdmin } from "../middleware/auth";
 
@@ -22,7 +23,12 @@ router.post("/", validateUserBody, UsersController.createUser);
 
 router.get("/:userId", UsersController.getUserById);
 
-router.put("/:userId", validateUserUpdateBody, UsersController.updateUserById);
+router.put(
+  "/:userId",
+  validateUserUpdateFields,
+  validateUserUpdateBody,
+  UsersController.updateUserById
+);
 
 router.delete("/:userId", UsersController.deleteUserById);
 
