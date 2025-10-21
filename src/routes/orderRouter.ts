@@ -16,7 +16,7 @@ router.param("orderId", validateOrderId);
 
 router.get("/", handleInputErrors, authenticate, OrderController.getAllOrders);
 
-router.post("/", handleInputErrors, OrderController.createOrder);
+router.post("/", handleInputErrors, authenticate, OrderController.createOrder);
 
 router.get(
   "/:orderId",

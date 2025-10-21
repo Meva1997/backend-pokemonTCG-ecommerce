@@ -1,10 +1,13 @@
 import {
   AllowNull,
+  AutoIncrement,
+  BelongsTo,
   Column,
   DataType,
   Default,
   ForeignKey,
   Model,
+  PrimaryKey,
   Table,
 } from "sequelize-typescript";
 import Order from "./Order";
@@ -15,6 +18,13 @@ import Product from "./Product";
   timestamps: false,
 })
 class OrderProduct extends Model {
+  @AutoIncrement
+  @PrimaryKey
+  @Column({
+    type: DataType.INTEGER,
+  })
+  declare id: number; // <--- AGREGADO
+
   @ForeignKey(() => Order)
   @AllowNull(false)
   @Column({
@@ -41,6 +51,9 @@ class OrderProduct extends Model {
     type: DataType.FLOAT,
   })
   declare price: number;
+
+  @BelongsTo(() => Product)
+  declare product: Product;
 }
 
 export default OrderProduct;

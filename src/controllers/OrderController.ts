@@ -76,7 +76,22 @@ export class OrderController {
 
   static async getAllOrders(req: Request, res: Response) {
     try {
-      const orders = await Order.findAll({});
+      const orders = await Order.findAll({
+        include: [
+          {
+            model: OrderProduct,
+            as: "orderProducts",
+            attributes: ["productId", "quantity", "price"],
+            include: [
+              {
+                model: Product,
+                as: "product",
+                attributes: ["name", "image", "price"],
+              },
+            ],
+          },
+        ],
+      });
       res.status(200).json(orders);
     } catch (error) {
       res.status(500).json({ error: "Error fetching orders" });
@@ -91,6 +106,23 @@ export class OrderController {
             model: Users,
             attributes: ["id", "userName", "email"],
           },
+          {
+            model: OrderProduct,
+            as: "orderProducts",
+            attributes: ["productId", "quantity", "price"],
+            include: [
+              {
+                model: Product,
+                as: "product",
+                attributes: ["name", "image", "price"],
+              },
+            ],
+          },
+          {
+            model: Payment,
+            as: "payment",
+            attributes: ["method", "status", "amount", "currency"],
+          },
         ],
       });
       if (!order) {
@@ -102,6 +134,7 @@ export class OrderController {
       res.status(200).json(order);
     } catch (error) {
       res.status(500).json({ error: "Error fetching order by ID" });
+      console.error("Error fetching order by ID:", error);
     }
   }
 
