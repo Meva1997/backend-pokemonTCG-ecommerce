@@ -21,8 +21,18 @@ router.post("/", handleInputErrors, OrderController.createOrder);
 router.get(
   "/:orderId",
   authenticate,
+  validateOrderExists,
   hasAccessToOrder,
   OrderController.getOrderById
+);
+
+router.post(
+  "/:orderId/pay",
+  authenticate,
+  validateOrderExists,
+  hasAccessToOrder,
+  handleInputErrors,
+  OrderController.payOrder
 );
 
 router.put(
@@ -33,7 +43,7 @@ router.put(
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["pending", "shipped", "delivered", "canceled"])
+    .isIn(["pending", "paid", "shipped", "cancelled"])
     .withMessage("Invalid status value"),
   handleInputErrors,
   OrderController.updateOrderStatus

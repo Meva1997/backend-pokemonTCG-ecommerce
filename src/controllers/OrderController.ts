@@ -8,10 +8,11 @@ import Payment from "../models/Payment";
 export class OrderController {
   static async createOrder(req: Request, res: Response) {
     try {
-      const { userId, products, shippingAddress } = req.body; // products is an array of { productId, quantity, price }
+      const authUserId = req.user?.id;
+      const { products, shippingAddress } = req.body; // products is an array of { productId, quantity, price }
 
       if (
-        !userId ||
+        !authUserId ||
         !Array.isArray(products) ||
         products.length === 0 ||
         !shippingAddress
@@ -40,7 +41,7 @@ export class OrderController {
 
       // Create the order
       const order = new Order({
-        userId,
+        userId: authUserId,
         shippingAddress,
         total,
         status: "pending",
@@ -100,18 +101,18 @@ export class OrderController {
       }
       res.status(200).json(order);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching order by ID" });
+      res.status(500).json({ error: "Error fetching order by ID" });
     }
   }
 
   static async updateOrderStatus(req: Request, res: Response) {
     await req.order.save();
-    res.status(200).json({ message: "Order status updated successfully" });
+    res.status(200).json("Order status updated successfully");
   }
 
   static async deleteOrder(req: Request, res: Response) {
     await req.order.destroy();
-    res.status(200).json({ message: "Order deleted successfully" });
+    res.status(200).json("Order deleted successfully");
   }
 
   static async payOrder(req: Request, res: Response) {

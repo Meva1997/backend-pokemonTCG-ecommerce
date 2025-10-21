@@ -50,6 +50,11 @@ export const validateUpdatedOrderExists = async (
     } else {
       order.status = status;
     }
+
+    req.order = order;
+    if (status) {
+      order.status = status;
+    }
     next();
   } catch (error) {
     res.status(500).json({ message: "Error updating order status" });
@@ -82,6 +87,17 @@ export async function hasAccessToOrder(
   next: NextFunction
 ) {
   try {
+    // In case validateOrderExists was not called before
+    if (!req.order && req.params.orderId) {
+      const fallBack = await Order.findByPk(req.params.orderId);
+      if (!fallBack) {
+        const errorMessage = new Error(
+          `Order with id ${req.params.orderId} not found`
+        );
+        return res.status(404).json({ error: errorMessage.message });
+      }
+      req.order = fallBack;
+    }
     const user = req.user;
     const order = req.order;
     if (!user.isAdmin && order.userId !== user.id) {
