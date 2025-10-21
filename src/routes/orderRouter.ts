@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { handleInputErrors } from "../middleware/validation";
 import { OrderController } from "../controllers/OrderController";
-import { body, param } from "express-validator";
+import { body } from "express-validator";
 import {
   hasAccessToOrder,
   validateOrderExists,
