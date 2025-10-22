@@ -134,7 +134,6 @@ export class OrderController {
       res.status(200).json(order);
     } catch (error) {
       res.status(500).json({ error: "Error fetching order by ID" });
-      console.error("Error fetching order by ID:", error);
     }
   }
 
@@ -203,13 +202,14 @@ export class OrderController {
       await order.save();
 
       return res.status(200).json({
+        message: "Payment processed successfully",
         orderId: order.id,
         paymentId: payment.id,
         status: "paid",
       });
     } catch (error) {
       const errorMessage = new Error("Error processing payment");
-      return res.status(500).json({ error: errorMessage.message });
+      res.status(500).json({ error: errorMessage.message });
     }
   }
 }
