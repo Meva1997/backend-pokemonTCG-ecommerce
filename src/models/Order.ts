@@ -34,9 +34,9 @@ class Order extends Model {
   @Default("pending")
   @AllowNull(false)
   @Column({
-    type: DataType.ENUM("pending", "paid", "shipped", "cancelled"),
+    type: DataType.ENUM("pending", "paid", "shipped", "delivered", "cancelled"),
   })
-  declare status: "pending" | "paid" | "shipped" | "cancelled";
+  declare status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
 
   @AllowNull(false)
   @Column({

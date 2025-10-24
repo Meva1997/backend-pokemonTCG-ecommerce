@@ -43,7 +43,7 @@ router.put(
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["pending", "paid", "shipped", "cancelled"])
+    .isIn(["pending", "paid", "shipped", "delivered", "cancelled"])
     .withMessage("Invalid status value"),
   handleInputErrors,
   OrderController.updateOrderStatus
