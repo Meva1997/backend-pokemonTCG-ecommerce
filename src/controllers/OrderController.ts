@@ -137,6 +137,50 @@ export class OrderController {
     }
   }
 
+  static async getOrderByUserId(req: Request, res: Response) {
+    try {
+      const { orderId, userId } = req.params;
+      const order = await Order.findAll({
+        where: { id: orderId, userId: userId },
+        include: [
+          {
+            model: Users,
+            attributes: ["id", "userName", "email"],
+          },
+          {
+            model: OrderProduct,
+            as: "orderProducts",
+            attributes: ["productId", "quantity", "price"],
+            include: [
+              {
+                model: Product,
+                as: "product",
+                attributes: ["name", "image", "price"],
+              },
+            ],
+          },
+          {
+            model: Payment,
+            as: "payment",
+            attributes: ["method", "status", "amount", "currency"],
+          },
+        ],
+      });
+
+      if (!order || order.length === 0) {
+        const errorMessage = new Error(
+          `Order with id ${orderId} for user ${userId} not found`
+        );
+        return res.status(404).json({ error: errorMessage.message });
+      }
+
+      res.status(200).json(order);
+    } catch (error) {
+      const errorMessage = new Error("Error fetching order by user ID");
+      res.status(500).json({ error: errorMessage.message });
+    }
+  }
+
   static async updateOrderStatus(req: Request, res: Response) {
     await req.order.save();
     res.status(200).json("Order status updated successfully");

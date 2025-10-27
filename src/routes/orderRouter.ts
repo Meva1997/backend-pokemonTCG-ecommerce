@@ -26,6 +26,13 @@ router.get(
   OrderController.getOrderById
 );
 
+router.get(
+  "/:orderId/user/:userId",
+  authenticate,
+  hasAccessToOrder,
+  OrderController.getOrderByUserId
+);
+
 router.post(
   "/:orderId/pay",
   authenticate,
