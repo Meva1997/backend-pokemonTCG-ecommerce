@@ -1,21 +1,83 @@
-# backend-pokemonTCG-ecommerce
+# Pokémon TCG E‑Commerce Backend
 
-Backend for a Pokémon TCG e-commerce platform, built with Node.js, Express.js, and TypeScript.
+A robust, scalable backend for a Pokémon Trading Card Game e-commerce platform. Built with Node.js, Express.js, and TypeScript, this API powers user management, product catalog, orders, authentication, and admin features for the frontend.
 
-## 👔 Project Overview
+---
 
-This project demonstrates industry best practices for building a scalable, secure, and maintainable RESTful API for an online store. It covers user management, product catalog, categories, order processing, and authentication. The codebase uses modern technologies and patterns suitable for professional production environments.
+## Screenshots
 
-## 🧩 Technical Stack & Architecture
+| Poke TCG Data base                                            | Postman Endpoints                                           |
+| ------------------------------------------------------------- | ----------------------------------------------------------- |
+| ![API Response](src/public/backendScreenshots/pokeTCG-DB.png) | ![Admin](src/public/backendScreenshots/pokeTCG-postman.png) |
 
-- **Node.js** & **Express.js**: High-performance web server and routing.
-- **TypeScript**: Type safety, maintainability, and developer productivity.
-- **Sequelize ORM**: Robust database modeling and migrations.
-- **JWT Authentication**: Secure stateless authentication and authorization.
-- **express-validator**: Reliable request validation to prevent malformed data.
-- **Modular structure**: Separation of concerns with routers, controllers, middlewares, and models.
+---
 
-## 🔗 Example API Endpoints
+## Features
+
+- RESTful API for users, products, categories, orders, and authentication
+- JWT-based authentication and role-based authorization
+- Password hashing and secure user management
+- Product catalog with categories and images
+- Order creation, status updates, and history
+- Admin endpoints for managing users, products, orders, and categories
+- Input validation and error handling
+- Rate limiting and security best practices
+- Sequelize ORM for database modeling and migrations
+- Written in TypeScript for type safety and maintainability
+
+## Tech Stack & Architecture
+
+- **Node.js** & **Express.js**
+- **TypeScript**
+- **Sequelize ORM** (PostgreSQL/MySQL/SQLite)
+- **JWT Authentication**
+- **express-validator**
+- **bcrypt** (password hashing)
+- **Modular structure** (controllers, routes, middleware, models)
+
+## Project Structure
+
+```
+backend/
+  src/
+    controllers/   # Business logic for resources
+    routes/        # API endpoint definitions
+    middleware/    # Auth, validation, error handling
+    models/        # Sequelize models
+    config/        # DB connection, env config
+    utils/         # Helper functions
+  public/          # Static assets/screenshots
+  README.md        # Project documentation
+```
+
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/Meva1997/backend-pokemonTCG-ecommerce.git
+cd backend-pokemonTCG-ecommerce
+
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your database URL and JWT secret
+
+# Run the development server
+npm run dev
+```
+
+## Environment Variables
+
+Create a `.env` file with:
+
+```
+DATABASE_URL=your_database_url
+JWT_SECRET=your_jwt_secret
+```
+
+## API Endpoints
 
 ### Users
 
@@ -33,6 +95,13 @@ This project demonstrates industry best practices for building a scalable, secur
 - `PUT /api/products/:productId` — Update product (admin only)
 - `DELETE /api/products/:productId` — Delete product (admin only)
 
+### Categories
+
+- `GET /api/categories` — List categories
+- `POST /api/categories` — Add category (admin only)
+- `PUT /api/categories/:categoryId` — Update category (admin only)
+- `DELETE /api/categories/:categoryId` — Delete category (admin only)
+
 ### Authentication
 
 - `POST /api/auth/create-account` — Register new account
@@ -48,59 +117,24 @@ This project demonstrates industry best practices for building a scalable, secur
 - `GET /api/orders/:orderId` — View order (owner or admin)
 - `PUT /api/orders/:orderId` — Update order (owner or admin)
 - `DELETE /api/orders/:orderId` — Delete order (owner or admin)
+- `GET /api/orders/:orderId/user/:userId` — Get order for specific user
 
-## 🛡️ Security Features
+## Security Features
 
-- **JWT-based authentication** and role-based authorization for sensitive endpoints.
-- **Password hashing** with bcrypt for storage safety.
-- **Rate limiting** on authentication routes to mitigate brute-force attacks.
-- **Input validation** to prevent common vulnerabilities and ensure data integrity.
+- JWT authentication and role-based access control
+- Password hashing with bcrypt
+- Rate limiting on sensitive routes
+- Input validation and sanitization
+- Error handling and logging
 
-## 🏗️ Project Structure
+## Testing
 
-- `/src/controllers` — Business logic for each resource
-- `/src/routes` — API endpoint definitions
-- `/src/middleware` — Authentication, authorization, and validation logic
-- `/src/models` — Sequelize models for database tables
-- `/src/config` — Database connection and environment configuration
+Pending.
 
-## 🧪 Testing
+## License
 
-You are encouraged to add unit and integration tests using Jest or Mocha, ensuring code reliability and facilitating CI/CD workflows.
-
-## ⚙️ Getting Started
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/Meva1997/backend-pokemonTCG-ecommerce.git
-   cd backend-pokemonTCG-ecommerce
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables:**
-   Create a `.env` file with:
-
-   ```
-   DATABASE_URL=your_database_url
-   JWT_SECRET=your_jwt_secret
-   ```
-
-4. **Run the server:**
-   ```bash
-   npm run dev
-   ```
-   The API will be available on the configured port (`4000` by default).
-
-## 📄 License
-
-Consider adding a license (e.g., MIT) to clarify usage permissions.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ---
 
-**Interested in how this code can support your business goals or team? Reach out!**
+This README will be updated as new features are released and the project evolves.
