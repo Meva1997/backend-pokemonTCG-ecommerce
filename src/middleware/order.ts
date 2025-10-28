@@ -87,25 +87,53 @@ export async function hasAccessToOrder(
   next: NextFunction
 ) {
   try {
-    // In case validateOrderExists was not called before
-    if (!req.order && req.params.orderId) {
-      const fallBack = await Order.findByPk(req.params.orderId);
-      if (!fallBack) {
-        const errorMessage = new Error(
-          `Order with id ${req.params.orderId} not found`
-        );
-        return res.status(404).json({ error: errorMessage.message });
-      }
-      req.order = fallBack;
-    }
     const user = req.user;
-    const order = req.order;
-    if (!user.isAdmin && order.userId !== user.id) {
-      const errorMessage = new Error("Access denied");
-      return res.status(403).json({ error: errorMessage.message });
+
+    // Si hay req.order, verifica acceso como antes
+    if (req.order) {
+      const order = req.order;
+      if (!user.isAdmin && order.userId !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      return next();
     }
-    next();
+
+    // Si solo hay userId, verifica que sea el mismo usuario o admin
+    if (req.params.userId) {
+      if (!user.isAdmin && Number(req.params.userId) !== user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      return next();
+    }
+
+    // Si no hay ni order ni userId, acceso denegado
+    return res.status(403).json({ error: "Access denied" });
   } catch (error) {
     res.status(500).json({ error: "Error checking order access" });
+    console.error(error);
   }
+
+  // try {
+  //   // In case validateOrderExists was not called before
+  //   if (!req.order && req.params.orderId) {
+  //     const fallBack = await Order.findByPk(req.params.orderId);
+  //     if (!fallBack) {
+  //       const errorMessage = new Error(
+  //         `Order with id ${req.params.orderId} not found`
+  //       );
+  //       return res.status(404).json({ error: errorMessage.message });
+  //     }
+  //     req.order = fallBack;
+  //   }
+  //   const user = req.user;
+  //   const order = req.order;
+  //   if (!user.isAdmin && order.userId !== user.id) {
+  //     const errorMessage = new Error("Access denied");
+  //     return res.status(403).json({ error: errorMessage.message });
+  //   }
+  //   next();
+  // } catch (error) {
+  //   res.status(500).json({ error: "Error checking order access" });
+  //   console.error(error);
+  // }
 }

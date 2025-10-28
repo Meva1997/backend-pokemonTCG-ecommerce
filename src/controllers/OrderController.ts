@@ -139,9 +139,9 @@ export class OrderController {
 
   static async getOrderByUserId(req: Request, res: Response) {
     try {
-      const { orderId, userId } = req.params;
+      const { userId } = req.params;
       const order = await Order.findAll({
-        where: { id: orderId, userId: userId },
+        where: { userId: userId },
         include: [
           {
             model: Users,
@@ -168,8 +168,10 @@ export class OrderController {
       });
 
       if (!order || order.length === 0) {
-        const errorMessage = new Error(
-          `Order with id ${orderId} for user ${userId} not found`
+        const errorMessage = new Error(`Order for user ${userId} not found`);
+        console.log(
+          "🚀 ~ OrderController ~ getOrderByUserId ~ errorMessage:",
+          errorMessage
         );
         return res.status(404).json({ error: errorMessage.message });
       }
@@ -178,6 +180,7 @@ export class OrderController {
     } catch (error) {
       const errorMessage = new Error("Error fetching order by user ID");
       res.status(500).json({ error: errorMessage.message });
+      console.error(error);
     }
   }
 

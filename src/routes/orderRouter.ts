@@ -27,7 +27,7 @@ router.get(
 );
 
 router.get(
-  "/:orderId/user/:userId",
+  "/user/:userId",
   authenticate,
   hasAccessToOrder,
   OrderController.getOrderByUserId
