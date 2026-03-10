@@ -23,7 +23,14 @@ export class PaymentsController {
       const {
         products,
         currency = "usd",
-      }: { products: CartItem[]; currency?: string } = req.body;
+        shipping = 0,
+        tax = 0,
+      }: {
+        products: CartItem[];
+        currency?: string;
+        shipping?: number;
+        tax?: number;
+      } = req.body;
 
       if (!Array.isArray(products) || products.length === 0) {
         return res
@@ -41,11 +48,21 @@ export class PaymentsController {
 
       // Validate all cart items upfront before any DB/Stripe calls
       for (const item of products) {
-        if (!item.productId || !Number.isInteger(item.productId) || item.productId <= 0) {
-          return res.status(400).json({ error: "Each item must have a valid productId" });
+        if (
+          !item.productId ||
+          !Number.isInteger(item.productId) ||
+          item.productId <= 0
+        ) {
+          return res
+            .status(400)
+            .json({ error: "Each item must have a valid productId" });
         }
 
-        if (!item.quantity || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+        if (
+          !item.quantity ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity <= 0
+        ) {
           return res.status(400).json({
             error: `Quantity for product ${item.productId} must be a positive integer greater than zero`,
           });
@@ -54,7 +71,9 @@ export class PaymentsController {
 
       // Fetch all products in a single query to avoid N+1 pattern
       const productIds = products.map((item) => item.productId);
-      const foundProducts = await Product.findAll({ where: { id: productIds } });
+      const foundProducts = await Product.findAll({
+        where: { id: productIds },
+      });
       const productMap = new Map(foundProducts.map((p) => [p.id, p]));
 
       let total = 0;
@@ -78,6 +97,21 @@ export class PaymentsController {
         validatedItems.push({ product, quantity: item.quantity });
       }
 
+      // Add shipping and tax passed from the frontend
+      const shippingAmount = Number(shipping);
+      const taxAmount = Number(tax);
+      if (!Number.isFinite(shippingAmount) || shippingAmount < 0) {
+        return res
+          .status(400)
+          .json({ error: "Shipping must be a non-negative number" });
+      }
+      if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+        return res
+          .status(400)
+          .json({ error: "Tax must be a non-negative number" });
+      }
+      total = total + shippingAmount + taxAmount;
+
       // Stripe amounts are in the smallest currency unit (cents for USD)
       const amountInCents = Math.round(total * 100);
 
@@ -87,11 +121,11 @@ export class PaymentsController {
         const order = await Order.create(
           {
             userId: authUserId,
-            shippingAddress: null,
+            shippingAddress: "",
             total,
             status: "pending",
           },
-          { transaction: t }
+          { transaction: t },
         );
 
         for (const item of validatedItems) {
@@ -102,7 +136,7 @@ export class PaymentsController {
               quantity: item.quantity,
               price: item.product.price,
             },
-            { transaction: t }
+            { transaction: t },
           );
         }
 
@@ -126,8 +160,11 @@ export class PaymentsController {
       });
     } catch (error) {
       if (error instanceof Stripe.errors.StripeError) {
-        return res.status(error.statusCode ?? 500).json({ error: error.message });
+        return res
+          .status(error.statusCode ?? 500)
+          .json({ error: error.message });
       }
+      console.error("[createPaymentIntent]", error);
       return res.status(500).json({ error: "Error creating payment intent" });
     }
   }
@@ -149,7 +186,8 @@ export class PaymentsController {
         return res.status(401).json({ error: "Authenticated user not found" });
       }
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent =
+        await stripe.paymentIntents.retrieve(paymentIntentId);
 
       if (
         paymentIntent.status !== "succeeded" &&
@@ -165,17 +203,23 @@ export class PaymentsController {
       if (!intentUserId || intentUserId !== authUserId.toString()) {
         return res
           .status(403)
-          .json({ error: "Payment intent does not belong to the authenticated user" });
+          .json({
+            error: "Payment intent does not belong to the authenticated user",
+          });
       }
 
       const rawOrderId = paymentIntent.metadata?.orderId;
       if (!rawOrderId) {
-        return res.status(400).json({ error: "Payment intent has no associated order" });
+        return res
+          .status(400)
+          .json({ error: "Payment intent has no associated order" });
       }
 
       const orderId = Number(rawOrderId);
       if (!Number.isInteger(orderId) || orderId <= 0) {
-        return res.status(400).json({ error: "Invalid order reference in payment intent" });
+        return res
+          .status(400)
+          .json({ error: "Invalid order reference in payment intent" });
       }
 
       // Wrap all DB writes in a transaction with row locking for concurrency safety
@@ -188,7 +232,9 @@ export class PaymentsController {
         });
 
         if (!order) {
-          throw new Error("Order not found or does not belong to the authenticated user");
+          throw new Error(
+            "Order not found or does not belong to the authenticated user",
+          );
         }
 
         // Guard against double-processing inside the transaction (concurrent requests safe)
@@ -201,7 +247,7 @@ export class PaymentsController {
         const stripeAmountInDollars = paymentIntent.amount / 100;
         if (paymentIntent.amount !== Math.round(order.total * 100)) {
           throw new Error(
-            `Payment amount mismatch: Stripe charged ${stripeAmountInDollars}, but order total is ${order.total}`
+            `Payment amount mismatch: Stripe charged ${stripeAmountInDollars}, but order total is ${order.total}`,
           );
         }
 
@@ -217,7 +263,7 @@ export class PaymentsController {
           const quantity = Number(op.quantity);
           if (!Number.isFinite(quantity) || quantity <= 0) {
             throw new Error(
-              `Invalid quantity for product with id ${op.productId}: ${op.quantity}`
+              `Invalid quantity for product with id ${op.productId}: ${op.quantity}`,
             );
           }
 
@@ -233,7 +279,7 @@ export class PaymentsController {
 
           if (product.stock < quantity) {
             throw new Error(
-              `Product "${product.name}" no longer has enough stock. Available: ${product.stock}, Requested: ${quantity}`
+              `Product "${product.name}" no longer has enough stock. Available: ${product.stock}, Requested: ${quantity}`,
             );
           }
 
@@ -243,7 +289,10 @@ export class PaymentsController {
         }
 
         // Update order with shipping address and mark as paid
-        await order.update({ shippingAddress, status: "paid" }, { transaction: t });
+        await order.update(
+          { shippingAddress, status: "paid" },
+          { transaction: t },
+        );
 
         const payment = await Payment.create(
           {
@@ -254,7 +303,7 @@ export class PaymentsController {
             currency: paymentIntent.currency,
             transactionReference: paymentIntent.id,
           },
-          { transaction: t }
+          { transaction: t },
         );
 
         return { order, payment };
@@ -268,7 +317,9 @@ export class PaymentsController {
       });
     } catch (error) {
       if (error instanceof Stripe.errors.StripeError) {
-        return res.status(error.statusCode ?? 500).json({ error: error.message });
+        return res
+          .status(error.statusCode ?? 500)
+          .json({ error: error.message });
       }
       if (error instanceof Error) {
         return res.status(400).json({ error: error.message });

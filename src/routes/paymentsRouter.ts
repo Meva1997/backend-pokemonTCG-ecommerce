@@ -25,8 +25,16 @@ router.post(
     .isString()
     .isLength({ min: 3, max: 3 })
     .withMessage("Currency must be a 3-letter ISO code (e.g. usd, mxn)"),
+  body("shipping")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Shipping must be a non-negative number"),
+  body("tax")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Tax must be a non-negative number"),
   handleInputErrors,
-  PaymentsController.createPaymentIntent
+  PaymentsController.createPaymentIntent,
 );
 
 router.post(
@@ -42,7 +50,7 @@ router.post(
     .isString()
     .withMessage("shippingAddress is required"),
   handleInputErrors,
-  PaymentsController.confirmPayment
+  PaymentsController.confirmPayment,
 );
 
 export default router;
