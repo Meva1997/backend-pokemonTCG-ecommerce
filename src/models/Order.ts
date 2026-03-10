@@ -38,11 +38,11 @@ class Order extends Model {
   })
   declare status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column({
     type: DataType.STRING,
   })
-  declare shippingAddress: string;
+  declare shippingAddress: string | null;
 
   @AllowNull(false)
   @Column({

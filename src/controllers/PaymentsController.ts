@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
-import { Op, literal } from "sequelize";
 import Product from "../models/Product";
 import Order from "../models/Order";
 import OrderProduct from "../models/OrderProduct";
@@ -32,9 +31,15 @@ export class PaymentsController {
           .json({ error: "Products array is required and cannot be empty" });
       }
 
-      let total = 0;
-      const validatedItems: { product: Product; quantity: number }[] = [];
+      // Normalize currency to lowercase (Stripe requires lowercase ISO codes, e.g. "usd" not "USD")
+      const normalizedCurrency = currency.toLowerCase();
 
+      const authUserId = req.user?.id;
+      if (!authUserId) {
+        return res.status(401).json({ error: "Authenticated user not found" });
+      }
+
+      // Validate all cart items upfront before any DB/Stripe calls
       for (const item of products) {
         if (!item.productId || !Number.isInteger(item.productId) || item.productId <= 0) {
           return res.status(400).json({ error: "Each item must have a valid productId" });
@@ -45,8 +50,18 @@ export class PaymentsController {
             error: `Quantity for product ${item.productId} must be a positive integer greater than zero`,
           });
         }
+      }
 
-        const product = await Product.findByPk(item.productId);
+      // Fetch all products in a single query to avoid N+1 pattern
+      const productIds = products.map((item) => item.productId);
+      const foundProducts = await Product.findAll({ where: { id: productIds } });
+      const productMap = new Map(foundProducts.map((p) => [p.id, p]));
+
+      let total = 0;
+      const validatedItems: { product: Product; quantity: number }[] = [];
+
+      for (const item of products) {
+        const product = productMap.get(item.productId);
         if (!product) {
           return res.status(404).json({
             error: `Product with id ${item.productId} not found`,
@@ -66,17 +81,40 @@ export class PaymentsController {
       // Stripe amounts are in the smallest currency unit (cents for USD)
       const amountInCents = Math.round(total * 100);
 
+      // Create a pending order in the DB and store only the orderId in Stripe metadata.
+      // This avoids embedding potentially large product JSON in metadata (Stripe limits values to 500 chars).
+      const pendingOrder = await db.transaction(async (t) => {
+        const order = await Order.create(
+          {
+            userId: authUserId,
+            shippingAddress: null,
+            total,
+            status: "pending",
+          },
+          { transaction: t }
+        );
+
+        for (const item of validatedItems) {
+          await OrderProduct.create(
+            {
+              orderId: order.id,
+              productId: item.product.id,
+              quantity: item.quantity,
+              price: item.product.price,
+            },
+            { transaction: t }
+          );
+        }
+
+        return order;
+      });
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
-        currency,
+        currency: normalizedCurrency,
         metadata: {
-          products: JSON.stringify(
-            validatedItems.map((i) => ({
-              productId: i.product.id,
-              quantity: i.quantity,
-            }))
-          ),
-          userId: req.user?.id?.toString() ?? "",
+          orderId: pendingOrder.id.toString(),
+          userId: authUserId.toString(),
         },
       });
 
@@ -84,7 +122,7 @@ export class PaymentsController {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amount: total,
-        currency,
+        currency: normalizedCurrency,
       });
     } catch (error) {
       if (error instanceof Stripe.errors.StripeError) {
@@ -106,6 +144,11 @@ export class PaymentsController {
         return res.status(400).json({ error: "shippingAddress is required" });
       }
 
+      const authUserId = req.user?.id;
+      if (!authUserId) {
+        return res.status(401).json({ error: "Authenticated user not found" });
+      }
+
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
       if (
@@ -117,92 +160,97 @@ export class PaymentsController {
         });
       }
 
-      // Prevent double-processing
-      const existingPayment = await Payment.findOne({
-        where: { transactionReference: paymentIntentId },
-      });
-      if (existingPayment) {
-        return res.status(400).json({ error: "Payment has already been processed" });
+      // Verify that the payment intent was created by the authenticated user
+      const intentUserId = paymentIntent.metadata?.userId;
+      if (!intentUserId || intentUserId !== authUserId.toString()) {
+        return res
+          .status(403)
+          .json({ error: "Payment intent does not belong to the authenticated user" });
       }
 
-      const rawProducts = paymentIntent.metadata?.products;
-      if (!rawProducts) {
-        return res.status(400).json({ error: "Payment intent has no associated products" });
+      const rawOrderId = paymentIntent.metadata?.orderId;
+      if (!rawOrderId) {
+        return res.status(400).json({ error: "Payment intent has no associated order" });
       }
 
-      const cartItems: CartItem[] = JSON.parse(rawProducts);
-      const authUserId = req.user?.id;
+      const orderId = Number(rawOrderId);
+      if (!Number.isInteger(orderId) || orderId <= 0) {
+        return res.status(400).json({ error: "Invalid order reference in payment intent" });
+      }
 
-      // Wrap order creation, stock decrement, and payment record in a transaction
+      // Wrap all DB writes in a transaction with row locking for concurrency safety
       const result = await db.transaction(async (t) => {
-        let total = 0;
-        const lockedProducts = new Map<number, Product>();
+        // Lock the pending order row inside the transaction
+        const order = await Order.findOne({
+          where: { id: orderId, userId: authUserId },
+          lock: t.LOCK.UPDATE,
+          transaction: t,
+        });
 
-        // Lock product rows and validate stock within the transaction
-        for (const item of cartItems) {
+        if (!order) {
+          throw new Error("Order not found or does not belong to the authenticated user");
+        }
+
+        // Guard against double-processing inside the transaction (concurrent requests safe)
+        if (order.status !== "pending") {
+          throw new Error("Payment has already been processed");
+        }
+
+        // Validate that Stripe's charged amount matches the stored order total (price-drift check).
+        // Compare cent values directly to avoid floating-point precision issues and currency-specific decimal places.
+        const stripeAmountInDollars = paymentIntent.amount / 100;
+        if (paymentIntent.amount !== Math.round(order.total * 100)) {
+          throw new Error(
+            `Payment amount mismatch: Stripe charged ${stripeAmountInDollars}, but order total is ${order.total}`
+          );
+        }
+
+        // Fetch the order's products
+        const orderProducts = await OrderProduct.findAll({
+          where: { orderId: order.id },
+          transaction: t,
+        });
+
+        // Lock product rows and decrement stock within the transaction
+        for (const op of orderProducts) {
+          // Validate quantity before using it in the stock update
+          const quantity = Number(op.quantity);
+          if (!Number.isFinite(quantity) || quantity <= 0) {
+            throw new Error(
+              `Invalid quantity for product with id ${op.productId}: ${op.quantity}`
+            );
+          }
+
           const product = await Product.findOne({
-            where: { id: item.productId },
+            where: { id: op.productId },
             lock: t.LOCK.UPDATE,
             transaction: t,
           });
+
           if (!product) {
-            throw new Error(`Product with id ${item.productId} not found`);
+            throw new Error(`Product with id ${op.productId} not found`);
           }
-          if (product.stock < item.quantity) {
+
+          if (product.stock < quantity) {
             throw new Error(
-              `Product "${product.name}" no longer has enough stock. Available: ${product.stock}, Requested: ${item.quantity}`
+              `Product "${product.name}" no longer has enough stock. Available: ${product.stock}, Requested: ${quantity}`
             );
           }
-          total += (product.price as number) * item.quantity;
-          lockedProducts.set(item.productId, product);
+
+          // Decrement stock using the instance method (parameterized, no SQL injection risk).
+          // Row is already locked above so the stock check is guaranteed to hold through the update.
+          await product.decrement("stock", { by: quantity, transaction: t });
         }
 
-        const order = await Order.create(
-          {
-            userId: authUserId,
-            shippingAddress,
-            total,
-            status: "paid",
-          },
-          { transaction: t }
-        );
-
-        for (const item of cartItems) {
-          const product = lockedProducts.get(item.productId)!;
-          await OrderProduct.create(
-            {
-              orderId: order.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              price: product.price,
-            },
-            { transaction: t }
-          );
-
-          // Atomically decrement stock only if sufficient quantity remains
-          const [updatedCount] = await Product.update(
-            { stock: literal(`stock - ${item.quantity}`) },
-            {
-              where: {
-                id: item.productId,
-                stock: { [Op.gte]: item.quantity },
-              },
-              transaction: t,
-            }
-          );
-          if (updatedCount === 0) {
-            throw new Error(
-              `Failed to decrement stock for product with id ${item.productId}: insufficient stock`
-            );
-          }
-        }
+        // Update order with shipping address and mark as paid
+        await order.update({ shippingAddress, status: "paid" }, { transaction: t });
 
         const payment = await Payment.create(
           {
             orderId: order.id,
             method: "card",
             status: "approved",
-            amount: paymentIntent.amount / 100,
+            amount: stripeAmountInDollars,
             currency: paymentIntent.currency,
             transactionReference: paymentIntent.id,
           },
