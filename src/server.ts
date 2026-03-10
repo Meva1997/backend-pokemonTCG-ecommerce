@@ -9,6 +9,7 @@ import productsRouter from "./routes/productsRouter";
 import categoriesRouter from "./routes/categoryRouter";
 import orderRouter from "./routes/orderRouter";
 import authRouter from "./routes/authRouter";
+import paymentsRouter from "./routes/paymentsRouter";
 
 async function connectDB() {
   try {
@@ -50,5 +51,6 @@ app.use("/api/products", productsRouter); // Products routes
 app.use("/api/categories", categoriesRouter); // Categories routes
 app.use("/api/orders", orderRouter); // Orders routes
 app.use("/api/auth", authRouter); // Auth routes
+app.use("/api/payments", paymentsRouter); // Payments routes (Stripe)
 
 export default app;
