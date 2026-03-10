@@ -9,6 +9,7 @@ import {
   Model,
   PrimaryKey,
   Table,
+  Unique,
 } from "sequelize-typescript";
 import Order from "./Order";
 
@@ -66,6 +67,7 @@ class Payment extends Model {
   })
   declare currency: string;
 
+  @Unique
   @AllowNull(true)
   @Column({
     type: DataType.STRING,
